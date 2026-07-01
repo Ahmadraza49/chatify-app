@@ -27,11 +27,11 @@ function ProfileHeader() {
   };
 
   return (
-    <div className="p-3 md:p-6 border-b border-slate-700/50">
+    <div className="p-3 md:p-5 border-b border-slate-700/50">
       <div className="flex items-center justify-between">
 
         {/* LEFT */}
-        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
 
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -43,8 +43,8 @@ function ProfileHeader() {
               className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover"
             />
 
-            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-              <span className="text-[10px] text-white">
+            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+              <span className="text-white text-[10px]">
                 Edit
               </span>
             </div>
@@ -59,42 +59,45 @@ function ProfileHeader() {
           />
 
           <div className="min-w-0">
-            <h3 className="text-white text-sm md:text-base font-semibold truncate">
+            <h3 className="text-white font-semibold text-sm md:text-base truncate">
               {authUser.fullName}
             </h3>
 
-            <p className="text-xs text-green-400">
+            <p className="text-green-400 text-xs">
               Online
             </p>
           </div>
         </div>
 
         {/* RIGHT */}
-        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+        <div className="flex items-center gap-2">
 
+          {/* SOUND */}
           <button
             onClick={() => {
               mouseClickSound.currentTime = 0;
               mouseClickSound.play().catch(() => {});
               toggleSound();
             }}
-            className="p-2 rounded-lg hover:bg-slate-700"
+            className="w-10 h-10 rounded-lg bg-slate-700/70 hover:bg-slate-600 flex items-center justify-center text-white transition"
           >
             {isSoundEnabled ? (
-              <Volume2Icon size={20} />
+              <Volume2Icon className="w-5 h-5" />
             ) : (
-              <VolumeOffIcon size={20} />
+              <VolumeOffIcon className="w-5 h-5" />
             )}
           </button>
 
+          {/* LOGOUT */}
           <button
             onClick={logout}
-            className="p-2 rounded-lg hover:bg-red-600"
+            className="w-10 h-10 rounded-lg bg-red-600 hover:bg-red-500 flex items-center justify-center text-white transition"
           >
-            <LogOutIcon size={20} />
+            <LogOutIcon className="w-5 h-5" />
           </button>
 
         </div>
+
       </div>
     </div>
   );
