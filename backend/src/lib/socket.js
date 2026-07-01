@@ -7,9 +7,7 @@ import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 const app = express();
 const server = http.createServer(app);
 
-// store online users safely
-const userSocketMap = {}; // { userId: socketId }
-
+// Socket.io setup
 const io = new Server(server, {
   cors: {
     origin: ENV.CLIENT_URL,
@@ -17,18 +15,13 @@ const io = new Server(server, {
   },
 });
 
-// auth middleware
+// Auth middleware
 io.use(socketAuthMiddleware);
-
-// helper: get socket id of a user
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
-}
 
 io.on("connection", (socket) => {
   const user = socket.user;
 
-  if (!user || !user._id) {
+  if (!user?._id) {
     socket.disconnect(true);
     return;
   }
@@ -37,19 +30,43 @@ io.on("connection", (socket) => {
 
   console.log("🟢 CONNECTED:", userId);
 
-  // ✅ JOIN ROOM (IMPORTANT FIX)
+  // ✅ USER JOIN OWN ROOM
   socket.join(userId);
 
-  userSocketMap[userId] = socket.id;
+  // ✅ ONLINE USERS LIST
+  const getOnlineUsers = () => {
+    const rooms = io.sockets.adapter.rooms;
+    const onlineUsers = [];
 
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    for (const [roomId, sockets] of rooms) {
+      // filter only user rooms (not socket rooms)
+      if (sockets.size >= 1) {
+        onlineUsers.push(roomId);
+      }
+    }
 
+    return onlineUsers;
+  };
+
+  io.emit("getOnlineUsers", getOnlineUsers());
+
+  // ✅ SEND MESSAGE
+  socket.on("sendMessage", (data) => {
+    // data: { receiverId, message, ... }
+
+    io.to(data.receiverId).emit("receiveMessage", {
+      senderId: userId,
+      message: data.message,
+      createdAt: new Date(),
+    });
+  });
+
+  // ✅ DISCONNECT
   socket.on("disconnect", () => {
     console.log("🔴 DISCONNECTED:", userId);
 
-    delete userSocketMap[userId];
-
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    // update online users
+    io.emit("getOnlineUsers", getOnlineUsers());
   });
 });
 
