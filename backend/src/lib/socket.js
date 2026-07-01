@@ -18,10 +18,14 @@ const io = new Server(server, {
 // Auth middleware
 io.use(socketAuthMiddleware);
 
+// ✅ clean online users store
+const onlineUsers = new Set();
+
 io.on("connection", (socket) => {
   const user = socket.user;
 
   if (!user?._id) {
+    console.log("❌ Unauthorized socket blocked");
     socket.disconnect(true);
     return;
   }
@@ -30,43 +34,49 @@ io.on("connection", (socket) => {
 
   console.log("🟢 CONNECTED:", userId);
 
-  // ✅ USER JOIN OWN ROOM
+  // join personal room
   socket.join(userId);
 
-  // ✅ ONLINE USERS LIST
-  const getOnlineUsers = () => {
-    const rooms = io.sockets.adapter.rooms;
-    const onlineUsers = [];
+  // add online user
+  onlineUsers.add(userId);
 
-    for (const [roomId, sockets] of rooms) {
-      // filter only user rooms (not socket rooms)
-      if (sockets.size >= 1) {
-        onlineUsers.push(roomId);
-      }
-    }
+  // broadcast online users
+  io.emit("getOnlineUsers", Array.from(onlineUsers));
 
-    return onlineUsers;
-  };
-
-  io.emit("getOnlineUsers", getOnlineUsers());
-
-  // ✅ SEND MESSAGE
+  // =========================
+  // SEND MESSAGE
+  // =========================
   socket.on("sendMessage", (data) => {
-    // data: { receiverId, message, ... }
+    try {
+      console.log("📩 SEND MESSAGE:", data);
 
-    io.to(data.receiverId).emit("receiveMessage", {
-      senderId: userId,
-      message: data.message,
-      createdAt: new Date(),
-    });
+      const receiverId = data?.receiverId?.toString();
+      const message = data?.message;
+
+      if (!receiverId || !message) {
+        console.log("⚠️ Invalid message payload");
+        return;
+      }
+
+      io.to(receiverId).emit("receiveMessage", {
+        senderId: userId,
+        message,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      console.log("❌ sendMessage error:", error.message);
+    }
   });
 
-  // ✅ DISCONNECT
+  // =========================
+  // DISCONNECT
+  // =========================
   socket.on("disconnect", () => {
     console.log("🔴 DISCONNECTED:", userId);
 
-    // update online users
-    io.emit("getOnlineUsers", getOnlineUsers());
+    onlineUsers.delete(userId);
+
+    io.emit("getOnlineUsers", Array.from(onlineUsers));
   });
 });
 
