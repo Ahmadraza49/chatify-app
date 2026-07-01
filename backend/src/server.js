@@ -13,8 +13,8 @@ const PORT = ENV.PORT || 3000;
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 app.use(cors({
-  origin: ENV.CLIENT_URL,
-  credentials: true,
+  origin: "https://chatify-app-plum.vercel.app",
+  credentials: true
 }));
 
 app.use("/api/auth", authRoutes);
