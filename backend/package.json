@@ -1,21 +1,20 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
   "keywords": [],
-  "type": "module",
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@arcjet/inspect": "^1.0.0-beta.10",
     "@arcjet/node": "^1.0.0-beta.10",
     "bcryptjs": "^3.0.3",
-    "chatify-app": "file:..",
     "cloudinary": "^2.5.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
