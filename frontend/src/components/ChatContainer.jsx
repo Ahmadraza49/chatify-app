@@ -14,7 +14,6 @@ function ChatContainer() {
     isMessagesLoading,
     subscribeToMessages,
     unsubscribeFromMessages,
-    clearMessages, // 👈 IMPORTANT (ensure this exists in store)
   } = useChatStore();
 
   const { authUser } = useAuthStore();
@@ -23,26 +22,20 @@ function ChatContainer() {
   const audioRefs = useRef({});
   const [playingId, setPlayingId] = useState(null);
 
-  // 🔥 FIXED EFFECT
   useEffect(() => {
-    if (!selectedUser?._id) return;
+  if (!selectedUser?._id) return;
 
-    clearMessages?.(); // 👈 prevents old chat showing
-    getMessagesByUserId(selectedUser._id);
-    subscribeToMessages();
+  getMessagesByUserId(selectedUser._id);
+  subscribeToMessages();
 
-    return () => {
-      unsubscribeFromMessages();
-    };
-  }, [
-    selectedUser?._id,
-    getMessagesByUserId,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-    clearMessages,
-  ]);
+  return () => unsubscribeFromMessages();
+}, [
+  selectedUser?._id,
+  getMessagesByUserId,
+  subscribeToMessages,
+  unsubscribeFromMessages
+]);
 
-  // auto scroll
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -81,11 +74,14 @@ function ChatContainer() {
         {isMessagesLoading ? (
           <MessagesLoadingSkeleton />
         ) : messages.length === 0 ? (
-          <NoChatHistoryPlaceholder name={selectedUser?.fullName} />
+          <NoChatHistoryPlaceholder
+            name={selectedUser?.fullName}
+          />
         ) : (
           <div className="max-w-4xl mx-auto space-y-4">
 
             {messages.map((msg) => {
+
               const senderId =
                 typeof msg.senderId === "object"
                   ? msg.senderId._id
@@ -97,11 +93,15 @@ function ChatContainer() {
               return (
                 <div
                   key={msg._id}
-                  className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                  className={`flex ${
+                    isOwn ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
                     className={`rounded-2xl p-3 max-w-[85%] break-words ${
-                      isOwn ? "bg-cyan-600" : "bg-slate-800"
+                      isOwn
+                        ? "bg-cyan-600"
+                        : "bg-slate-800"
                     }`}
                   >
 
@@ -130,7 +130,9 @@ function ChatContainer() {
                         </button>
 
                         <audio
-                          ref={(el) => (audioRefs.current[msg._id] = el)}
+                          ref={(el) =>
+                            (audioRefs.current[msg._id] = el)
+                          }
                           src={msg.audio}
                           onEnded={() => setPlayingId(null)}
                         />
@@ -155,6 +157,7 @@ function ChatContainer() {
             })}
 
             <div ref={messageEndRef} />
+
           </div>
         )}
 
@@ -169,4 +172,4 @@ function ChatContainer() {
   );
 }
 
-export default ChatContainer;
+export default ChatContainer; 
