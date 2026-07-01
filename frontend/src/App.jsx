@@ -31,7 +31,7 @@ return (
     <div className="absolute bottom-0 -right-4 w-96 h-96 bg-cyan-500 opacity-20 blur-[100px]" />
 
     {/* Main */}
-    <div className="relative w-full h-screen md:flex md:items-center md:justify-center md:p-4">
+    <div className="relative w-full h-[100dvh] md:flex md:items-center md:justify-center md:p-4">
 
       <Routes>
         <Route
