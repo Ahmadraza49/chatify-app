@@ -7,23 +7,30 @@ import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 const app = express();
 const server = http.createServer(app);
 
-// Socket.io setup
+// ======================
+// SOCKET SETUP
+// ======================
 const io = new Server(server, {
   cors: {
     origin: ENV.CLIENT_URL,
     credentials: true,
   },
   transports: ["websocket", "polling"],
-  pingTimeout: 60000, // 🔥 IMPORTANT (disconnect fix)
+  pingTimeout: 60000,
   pingInterval: 25000,
 });
 
-// Auth middleware
+// auth middleware
 io.use(socketAuthMiddleware);
 
-// ✅ online users
+// ======================
+// ONLINE USERS
+// ======================
 const onlineUsers = new Set();
 
+// ======================
+// CONNECTION
+// ======================
 io.on("connection", (socket) => {
   const user = socket.user;
 
@@ -37,30 +44,24 @@ io.on("connection", (socket) => {
 
   console.log("🟢 CONNECTED:", userId);
 
-  // join room
   socket.join(userId);
 
-  // mark online
   onlineUsers.add(userId);
 
   io.emit("getOnlineUsers", Array.from(onlineUsers));
 
-  // =========================
+  // ======================
   // SEND MESSAGE
-  // =========================
+  // ======================
   socket.on("sendMessage", (data) => {
     try {
-      console.log("📩 SEND MESSAGE:", data);
+      console.log("📩 MESSAGE:", data);
 
       const receiverId = String(data?.receiverId || "");
       const message = data?.message;
 
-      if (!receiverId || !message) {
-        console.log("⚠️ Invalid message payload");
-        return;
-      }
+      if (!receiverId || !message) return;
 
-      // 🔥 IMPORTANT FIX: ensure delivery check
       const payload = {
         senderId: userId,
         message,
@@ -70,30 +71,22 @@ io.on("connection", (socket) => {
       // send to receiver
       io.to(receiverId).emit("receiveMessage", payload);
 
-      // ALSO send back to sender (sync fix)
+      // send to sender (sync)
       io.to(userId).emit("receiveMessage", payload);
-
-      console.log(`✅ Message sent: ${userId} → ${receiverId}`);
     } catch (error) {
       console.log("❌ sendMessage error:", error.message);
     }
   });
 
-  // =========================
-  // DISCONNECT (FIXED DELAY ISSUE)
-  // =========================
+  // ======================
+  // DISCONNECT
+  // ======================
   socket.on("disconnect", () => {
     console.log("🔴 DISCONNECTED:", userId);
 
-    // small delay fix (prevents flicker disconnect bug)
-    setTimeout(() => {
-      const stillConnected = [...io.sockets.adapter.rooms.get(userId) || []].length;
+    onlineUsers.delete(userId);
 
-      if (stillConnected === 0) {
-        onlineUsers.delete(userId);
-        io.emit("getOnlineUsers", Array.from(onlineUsers));
-      }
-    }, 1000);
+    io.emit("getOnlineUsers", Array.from(onlineUsers));
   });
 });
 
