@@ -27,21 +27,15 @@ const userSocketMap = {}; // {userId:socketId}
 
 io.on("connection", (socket) => {
   console.log("CONNECTED:", socket.user.fullName);
-  console.log("Socket ID:", socket.id);
 
-  const userId = socket.userId;
+  const userId = socket.user._id.toString();
+
   userSocketMap[userId] = socket.id;
-
-  console.log("ONLINE USERS:", userSocketMap);
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
-    console.log("DISCONNECTED:", socket.user.fullName);
-
     delete userSocketMap[userId];
-
-    console.log("ONLINE USERS:", userSocketMap);
 
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
