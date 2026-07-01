@@ -13,12 +13,15 @@ const io = new Server(server, {
     origin: ENV.CLIENT_URL,
     credentials: true,
   },
+  transports: ["websocket", "polling"],
+  pingTimeout: 60000, // 🔥 IMPORTANT (disconnect fix)
+  pingInterval: 25000,
 });
 
 // Auth middleware
 io.use(socketAuthMiddleware);
 
-// ✅ clean online users store
+// ✅ online users
 const onlineUsers = new Set();
 
 io.on("connection", (socket) => {
@@ -34,13 +37,12 @@ io.on("connection", (socket) => {
 
   console.log("🟢 CONNECTED:", userId);
 
-  // join personal room
+  // join room
   socket.join(userId);
 
-  // add online user
+  // mark online
   onlineUsers.add(userId);
 
-  // broadcast online users
   io.emit("getOnlineUsers", Array.from(onlineUsers));
 
   // =========================
@@ -50,7 +52,7 @@ io.on("connection", (socket) => {
     try {
       console.log("📩 SEND MESSAGE:", data);
 
-      const receiverId = data?.receiverId?.toString();
+      const receiverId = String(data?.receiverId || "");
       const message = data?.message;
 
       if (!receiverId || !message) {
@@ -58,25 +60,40 @@ io.on("connection", (socket) => {
         return;
       }
 
-      io.to(receiverId).emit("receiveMessage", {
+      // 🔥 IMPORTANT FIX: ensure delivery check
+      const payload = {
         senderId: userId,
         message,
         createdAt: new Date(),
-      });
+      };
+
+      // send to receiver
+      io.to(receiverId).emit("receiveMessage", payload);
+
+      // ALSO send back to sender (sync fix)
+      io.to(userId).emit("receiveMessage", payload);
+
+      console.log(`✅ Message sent: ${userId} → ${receiverId}`);
     } catch (error) {
       console.log("❌ sendMessage error:", error.message);
     }
   });
 
   // =========================
-  // DISCONNECT
+  // DISCONNECT (FIXED DELAY ISSUE)
   // =========================
   socket.on("disconnect", () => {
     console.log("🔴 DISCONNECTED:", userId);
 
-    onlineUsers.delete(userId);
+    // small delay fix (prevents flicker disconnect bug)
+    setTimeout(() => {
+      const stillConnected = [...io.sockets.adapter.rooms.get(userId) || []].length;
 
-    io.emit("getOnlineUsers", Array.from(onlineUsers));
+      if (stillConnected === 0) {
+        onlineUsers.delete(userId);
+        io.emit("getOnlineUsers", Array.from(onlineUsers));
+      }
+    }, 1000);
   });
 });
 
