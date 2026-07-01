@@ -29,23 +29,23 @@ io.on("connection", (socket) => {
   const user = socket.user;
 
   if (!user || !user._id) {
-    console.log("❌ Unauthorized socket connection");
     socket.disconnect(true);
     return;
   }
 
   const userId = user._id.toString();
 
-  console.log("🟢 CONNECTED:", user.fullName || userId);
+  console.log("🟢 CONNECTED:", userId);
 
-  // store user socket
+  // ✅ JOIN ROOM (IMPORTANT FIX)
+  socket.join(userId);
+
   userSocketMap[userId] = socket.id;
 
-  // emit updated online users list
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
-    console.log("🔴 DISCONNECTED:", user.fullName || userId);
+    console.log("🔴 DISCONNECTED:", userId);
 
     delete userSocketMap[userId];
 
