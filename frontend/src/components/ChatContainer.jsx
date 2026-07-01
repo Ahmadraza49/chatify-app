@@ -65,10 +65,10 @@ useEffect(() => {
 console.log("messages.length =", messages.length);
 console.log("isMessagesLoading =", isMessagesLoading);
   return (
-    <>
+    <div className="flex flex-col h-full min-h-0">
       <ChatHeader />
 
-<div className="flex-1 px-3 md:px-6 py-4 md:py-8 overflow-y-auto">
+<div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-6 py-4 md:py-6">
         {messages.length > 0 && !isMessagesLoading ? (
          <div className="max-w-4xl mx-auto space-y-4">
             {messages.map((msg) => {
@@ -168,8 +168,11 @@ width: "fit-content",
         )}
       </div>
 
-      <MessageInput />
-    </>
+     <div className="shrink-0">
+  <MessageInput />
+</div>
+
+</div>
   );
 }
 
