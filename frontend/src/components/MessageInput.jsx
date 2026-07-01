@@ -121,7 +121,7 @@ const stopRecording = () => {
   setIsRecording(false);
 };
   return (
-  <div className="p-4 border-t border-slate-700/50">
+  <div className="p-2 md:p-4 border-t border-slate-700/50">
     {imagePreview && (
       <div className="max-w-3xl mx-auto mb-3 flex items-center">
         <div className="relative">
@@ -162,9 +162,9 @@ const stopRecording = () => {
 )}
 
     <form
-      onSubmit={handleSendMessage}
-      className="max-w-3xl mx-auto flex items-center gap-3"
-    >
+  onSubmit={handleSendMessage}
+  className="max-w-3xl mx-auto flex items-center gap-3"
+>
       <input
         type="text"
         value={text}
@@ -175,7 +175,7 @@ const stopRecording = () => {
             playRandomKeyStrokeSound();
           }
         }}
-        className="flex-1 bg-slate-800 text-white placeholder:text-slate-400 border border-slate-700 rounded-lg py-2 px-4 outline-none"
+       className="flex-1 min-w-0 bg-slate-800 text-white placeholder:text-slate-400 border border-slate-700 rounded-xl py-3 px-3 text-sm md:text-base outline-none"
         placeholder="Type your message..."
       />
 
@@ -191,7 +191,7 @@ const stopRecording = () => {
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className={`bg-slate-800/50 text-slate-300 hover:text-white rounded-lg px-4 py-2 ${
+        className={`flex-shrink-0 bg-slate-800/50 text-slate-300 hover:text-white rounded-xl p-3` ${
           imagePreview ? "text-cyan-500" : ""
         }`}
       >
@@ -203,7 +203,7 @@ const stopRecording = () => {
         <button
           type="button"
           onClick={startRecording}
-          className="bg-slate-800/50 text-slate-300 hover:text-white rounded-lg px-4 py-2"
+         className="flex-shrink-0 bg-slate-800/50 text-slate-300 hover:text-white rounded-xl p-3"
         >
           <MicIcon className="w-5 h-5" />
         </button>
@@ -211,7 +211,7 @@ const stopRecording = () => {
         <button
           type="button"
           onClick={stopRecording}
-          className="bg-red-600 text-white rounded-lg px-4 py-2 animate-pulse"
+        className="flex-shrink-0 bg-red-600 text-white rounded-xl p-3 animate-pulse"
         >
           <SquareIcon className="w-5 h-5" />
         </button>
@@ -221,7 +221,7 @@ const stopRecording = () => {
       <button
         type="submit"
         disabled={!text.trim() && !imagePreview && !audio}
-        className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    className="flex-shrink-0 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-xl p-3 hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <SendIcon className="w-5 h-5" />
       </button>
