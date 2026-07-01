@@ -17,33 +17,25 @@ function ChatContainer() {
   } = useChatStore();
 
   const { authUser } = useAuthStore();
-  const messageEndRef = useRef(null);
 
+  const messageEndRef = useRef(null);
   const audioRefs = useRef({});
   const [playingId, setPlayingId] = useState(null);
 
-useEffect(() => {
-  if (!selectedUser) return;
+  useEffect(() => {
+    if (!selectedUser) return;
 
-  getMessagesByUserId(selectedUser._id);
-  subscribeToMessages();
+    getMessagesByUserId(selectedUser._id);
+    subscribeToMessages();
 
-  return () => {
-    unsubscribeFromMessages();
-  };
-}, [selectedUser]);
-
+    return () => unsubscribeFromMessages();
+  }, [selectedUser]);
 
   useEffect(() => {
-    if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messageEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages]);
-
-  // 👇 Debug Logs
-  console.log("Selected User:", selectedUser);
-  console.log("Messages:", messages);
-  console.log("Loading:", isMessagesLoading);
 
   const toggleAudio = (id) => {
     const audio = audioRefs.current[id];
@@ -62,17 +54,28 @@ useEffect(() => {
     audio.play();
     setPlayingId(id);
   };
-console.log("messages.length =", messages.length);
-console.log("isMessagesLoading =", isMessagesLoading);
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      <ChatHeader />
 
-<div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-6 py-4 md:py-6">
-        {messages.length > 0 && !isMessagesLoading ? (
-         <div className="max-w-4xl mx-auto space-y-4">
+  return (
+    <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+
+      {/* HEADER */}
+      <div className="shrink-0">
+        <ChatHeader />
+      </div>
+
+      {/* MESSAGES */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 md:px-6 py-4 space-y-4">
+
+        {isMessagesLoading ? (
+          <MessagesLoadingSkeleton />
+        ) : messages.length === 0 ? (
+          <NoChatHistoryPlaceholder
+            name={selectedUser?.fullName}
+          />
+        ) : (
+          <div className="max-w-4xl mx-auto space-y-4">
+
             {messages.map((msg) => {
-              console.log("Single Message:", msg);
 
               const senderId =
                 typeof msg.senderId === "object"
@@ -80,50 +83,43 @@ console.log("isMessagesLoading =", isMessagesLoading);
                   : msg.senderId;
 
               const isOwn =
-                senderId.toString() === authUser._id.toString();
+                senderId?.toString() === authUser?._id?.toString();
 
               return (
                 <div
-  key={msg._id}
-  style={{
-    display: "flex",
-    justifyContent: isOwn ? "flex-end" : "flex-start",
-    marginBottom: "15px",
-  }}
->
-                <div
-  style={{
-    background: isOwn ? "#0891b2" : "#1e293b",
-    color: "white",
-    padding: "12px",
-    borderRadius: "12px",
-    maxWidth: "85%",
-width: "fit-content",
-  }}
->
+                  key={msg._id}
+                  className={`flex ${
+                    isOwn ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`rounded-2xl p-3 max-w-[85%] break-words ${
+                      isOwn
+                        ? "bg-cyan-600"
+                        : "bg-slate-800"
+                    }`}
+                  >
+
                     {msg.image && (
                       <img
                         src={msg.image}
-                        alt="Shared"
-                        className="rounded-lg h-48 object-cover mb-2"
+                        alt=""
+                        className="rounded-xl mb-2 max-h-60 object-cover"
                       />
                     )}
 
                     {msg.text && (
-                      <p className="break-words whitespace-pre-wrap">
+                      <p className="whitespace-pre-wrap break-words">
                         {msg.text}
                       </p>
                     )}
 
                     {msg.audio && (
-                      <div className="mt-2 flex items-center gap-2 w-full">
+                      <div className="mt-3 flex items-center gap-2">
+
                         <button
                           onClick={() => toggleAudio(msg._id)}
-                          className={`w-7 h-7 rounded-full ${
-                            isOwn
-                              ? "bg-white/20"
-                              : "bg-white/10"
-                          }`}
+                          className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
                         >
                           {playingId === msg._id ? "⏸" : "▶"}
                         </button>
@@ -136,43 +132,38 @@ width: "fit-content",
                           onEnded={() => setPlayingId(null)}
                         />
 
-                        <div className="flex-1 h-1 bg-white/20 rounded-full">
-                          <div className="h-full w-1/2 bg-cyan-400"></div>
+                        <div className="flex-1 h-1 rounded-full bg-white/20">
+                          <div className="w-1/2 h-full rounded-full bg-cyan-300"></div>
                         </div>
 
-                        <span className="text-[10px] opacity-60">
-                          voice
-                        </span>
                       </div>
                     )}
 
-                    <p className="text-xs mt-2 opacity-70 text-right">
+                    <p className="text-right text-[10px] opacity-70 mt-2">
                       {new Date(msg.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </p>
+
                   </div>
                 </div>
               );
             })}
 
             <div ref={messageEndRef} />
+
           </div>
-        ) : isMessagesLoading ? (
-          <MessagesLoadingSkeleton />
-        ) : (
-          <NoChatHistoryPlaceholder
-            name={selectedUser?.fullName}
-          />
         )}
+
       </div>
 
-     <div className="shrink-0">
-  <MessageInput />
-</div>
+      {/* INPUT */}
+      <div className="shrink-0 border-t border-slate-700 bg-slate-900">
+        <MessageInput />
+      </div>
 
-</div>
+    </div>
   );
 }
 
