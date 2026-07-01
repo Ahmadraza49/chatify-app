@@ -21,7 +21,7 @@ function App() {
   if (isCheckingAuth) return <PageLoader />;
 
 return (
-  <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+<div className="min-h-screen bg-slate-900 relative overflow-x-hidden">
 
     {/* Background */}
     <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]" />
