@@ -68,9 +68,9 @@ console.log("isMessagesLoading =", isMessagesLoading);
     <>
       <ChatHeader />
 
-      <div className="flex-1 px-6 overflow-y-auto py-8">
+<div className="flex-1 px-3 md:px-6 py-4 md:py-8 overflow-y-auto">
         {messages.length > 0 && !isMessagesLoading ? (
-          <div className="max-w-3xl mx-auto space-y-6">
+         <div className="max-w-4xl mx-auto space-y-4">
             {messages.map((msg) => {
               console.log("Single Message:", msg);
 
@@ -97,7 +97,8 @@ console.log("isMessagesLoading =", isMessagesLoading);
     color: "white",
     padding: "12px",
     borderRadius: "12px",
-    maxWidth: "300px",
+    maxWidth: "85%",
+width: "fit-content",
   }}
 >
                     {msg.image && (
