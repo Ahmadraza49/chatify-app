@@ -81,84 +81,73 @@ export const useChatStore = create((set, get) => ({
   }
 },
 sendMessage: async (messageData) => {
-  const { selectedUser, messages } = get();
-  const { authUser } = useAuthStore.getState();
+  const { selectedUser } = get();
 
-  const tempId = `temp-${Date.now()}`;
-
-  const optimisticMessage = {
-    _id: tempId,
-    senderId: authUser._id,
-    receiverId: selectedUser._id,
-    text: messageData.text || "",
-    image: messageData.image || "",
-    audio: messageData.audio || "",
-    createdAt: new Date().toISOString(),
-    isOptimistic: true,
-  };
-
-  set({
-    messages: [...messages, optimisticMessage],
-  });
+  if (!selectedUser?._id) return;
 
   try {
-    const res = await axiosInstance.post(
+    await axiosInstance.post(
       `/messages/send/${selectedUser._id}`,
       messageData
     );
 
-    set((state) => ({
-      messages: state.messages
-        .filter((m) => m._id !== tempId)
-        .concat(res.data),
-    }));
-  } catch (error) {
-    set({
-      messages,
-    });
+    // ❌ Yahan messages state manually update nahi karni.
+    // Backend newMessage emit karega aur subscribeToMessages
+    // automatically message add kar dega.
 
+  } catch (error) {
     toast.error(
-      error.response?.data?.message || "Something went wrong"
+      error.response?.data?.message || "Failed to send message"
     );
   }
 },
 
- subscribeToMessages: () => {
-  const { selectedUser, isSoundEnabled } = get();
-
-  if (!selectedUser) return;
-
+subscribeToMessages: () => {
   const socket = useAuthStore.getState().socket;
 
   if (!socket) return;
 
-  // Purana listener remove karo taake duplicate listeners na banen
   socket.off("newMessage");
 
   socket.on("newMessage", (newMessage) => {
-    console.log("Realtime message received:", newMessage);
+    const { selectedUser } = get();
+
+    if (!selectedUser) return;
 
     const senderId =
       typeof newMessage.senderId === "object"
         ? newMessage.senderId._id
         : newMessage.senderId;
 
-    // Sirf selected user ke messages show karo
-    if (senderId.toString() !== selectedUser._id.toString()) return;
+    const receiverId =
+      typeof newMessage.receiverId === "object"
+        ? newMessage.receiverId._id
+        : newMessage.receiverId;
 
-    set((state) => ({
-      messages: [...state.messages, newMessage],
-    }));
-
-    if (isSoundEnabled) {
-      const notificationSound = new Audio("/sounds/notification.mp3");
-      notificationSound.currentTime = 0;
-      notificationSound.play().catch(() => {});
+    // Sirf current open chat ke messages add karo
+    if (
+      senderId.toString() !== selectedUser._id.toString() &&
+      receiverId.toString() !== selectedUser._id.toString()
+    ) {
+      return;
     }
+
+    set((state) => {
+      // duplicate message na aaye
+      const exists = state.messages.some(
+        (m) => m._id.toString() === newMessage._id.toString()
+      );
+
+      if (exists) return state;
+
+      return {
+        messages: [...state.messages, newMessage],
+      };
+    });
   });
 },
 
-  unsubscribeFromMessages: () => {
+ unsubscribeFromMessages: () => {
   const socket = useAuthStore.getState().socket;
 
   if (!socket) return;
