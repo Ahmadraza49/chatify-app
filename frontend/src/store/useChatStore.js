@@ -112,14 +112,23 @@ sendMessage: async (messageData) => {
 subscribeToMessages: () => {
   const socket = useAuthStore.getState().socket;
 
-  if (!socket) return;
+  if (!socket) {
+    console.log("❌ Socket not connected");
+    return;
+  }
 
+  // Purana listener remove
   socket.off("newMessage");
 
   socket.on("newMessage", (newMessage) => {
+    console.log("📩 NEW SOCKET MESSAGE:", newMessage);
+
     const { selectedUser } = get();
 
-    if (!selectedUser) return;
+    if (!selectedUser) {
+      console.log("❌ No selected user");
+      return;
+    }
 
     const senderId =
       typeof newMessage.senderId === "object"
@@ -131,20 +140,30 @@ subscribeToMessages: () => {
         ? newMessage.receiverId._id
         : newMessage.receiverId;
 
-    // sirf current chat ke messages
+    console.log("Sender:", senderId);
+    console.log("Receiver:", receiverId);
+    console.log("Current Chat:", selectedUser._id);
+
+    // Sirf current open chat ke messages
     if (
       senderId.toString() !== selectedUser._id.toString() &&
       receiverId.toString() !== selectedUser._id.toString()
     ) {
+      console.log("⏭ Ignored (different chat)");
       return;
     }
 
     set((state) => {
       const exists = state.messages.some(
-        (m) => m._id === newMessage._id
+        (m) => m._id.toString() === newMessage._id.toString()
       );
 
-      if (exists) return state;
+      if (exists) {
+        console.log("⚠ Duplicate message");
+        return state;
+      }
+
+      console.log("✅ Message Added");
 
       return {
         messages: [...state.messages, newMessage],
