@@ -9,11 +9,8 @@ import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 function ChatContainer() {
   const {
     selectedUser,
-    getMessagesByUserId,
     messages,
     isMessagesLoading,
-    subscribeToMessages,
-    unsubscribeFromMessages,
   } = useChatStore();
 
   const { authUser } = useAuthStore();
@@ -22,25 +19,25 @@ function ChatContainer() {
   const audioRefs = useRef({});
   const [playingId, setPlayingId] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
   if (!selectedUser?._id) return;
 
   getMessagesByUserId(selectedUser._id);
+
   subscribeToMessages();
 
-  return () => unsubscribeFromMessages();
-}, [
-  selectedUser?._id,
-  getMessagesByUserId,
-  subscribeToMessages,
-  unsubscribeFromMessages
-]);
+  return () => {
+    unsubscribeFromMessages();
+  };
+}, [selectedUser?._id]);
 
-  useEffect(() => {
+useEffect(() => {
+  setTimeout(() => {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [messages]);
+  }, 50);
+}, [messages]);
 
   const toggleAudio = (id) => {
     const audio = audioRefs.current[id];
@@ -81,7 +78,7 @@ function ChatContainer() {
           <div className="max-w-4xl mx-auto space-y-4">
 
             {messages.map((msg) => {
-
+               console.log("MESSAGE:", msg);
               const senderId =
                 typeof msg.senderId === "object"
                   ? msg.senderId._id
