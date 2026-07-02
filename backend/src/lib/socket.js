@@ -12,47 +12,42 @@ export const io = new Server(server, {
     origin: ENV.CLIENT_URL,
     credentials: true,
   },
+
   transports: ["websocket", "polling"],
+
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
-// ================================
-// USER -> SOCKET MAP
-// ================================
+io.use(socketAuthMiddleware);
+
+// ==============================
+// USER SOCKET MAP
+// ==============================
+
 const userSocketMap = {};
 
-// return socket id of any user
 export const getReceiverSocketId = (userId) => {
   return userSocketMap[userId];
 };
 
-io.use(socketAuthMiddleware);
-
-// ================================
+// ==============================
 // CONNECTION
-// ================================
+// ==============================
+
 io.on("connection", (socket) => {
-  const user = socket.user;
+  const userId = socket.userId;
 
-  if (!user?._id) {
-    socket.disconnect(true);
-    return;
-  }
+  console.log("🟢 CONNECT:", userId);
 
-  const userId = user._id.toString();
-
-  console.log("🟢 User Connected:", userId);
-
-  // save socket
   userSocketMap[userId] = socket.id;
 
-  // send online users
+  socket.join(userId);
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // ================================
-  // DISCONNECT
-  // ================================
   socket.on("disconnect", () => {
-    console.log("🔴 User Disconnected:", userId);
+    console.log("🔴 DISCONNECT:", userId);
 
     delete userSocketMap[userId];
 
