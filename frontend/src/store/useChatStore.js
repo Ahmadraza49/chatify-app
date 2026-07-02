@@ -86,15 +86,22 @@ sendMessage: async (messageData) => {
   if (!selectedUser?._id) return;
 
   try {
-    await axiosInstance.post(
+    const res = await axiosInstance.post(
       `/messages/send/${selectedUser._id}`,
       messageData
     );
 
-    // ❌ Yahan messages state manually update nahi karni.
-    // Backend newMessage emit karega aur subscribeToMessages
-    // automatically message add kar dega.
+    set((state) => {
+      const exists = state.messages.some(
+        (m) => m._id === res.data._id
+      );
 
+      if (exists) return state;
+
+      return {
+        messages: [...state.messages, res.data],
+      };
+    });
   } catch (error) {
     toast.error(
       error.response?.data?.message || "Failed to send message"
@@ -124,7 +131,7 @@ subscribeToMessages: () => {
         ? newMessage.receiverId._id
         : newMessage.receiverId;
 
-    // Sirf current open chat ke messages add karo
+    // sirf current chat ke messages
     if (
       senderId.toString() !== selectedUser._id.toString() &&
       receiverId.toString() !== selectedUser._id.toString()
@@ -133,9 +140,8 @@ subscribeToMessages: () => {
     }
 
     set((state) => {
-      // duplicate message na aaye
       const exists = state.messages.some(
-        (m) => m._id.toString() === newMessage._id.toString()
+        (m) => m._id === newMessage._id
       );
 
       if (exists) return state;
@@ -146,8 +152,7 @@ subscribeToMessages: () => {
     });
   });
 },
-
- unsubscribeFromMessages: () => {
+unsubscribeFromMessages: () => {
   const socket = useAuthStore.getState().socket;
 
   if (!socket) return;
