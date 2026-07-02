@@ -94,31 +94,37 @@ export const getMessagesByUserId = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { text, image, audio } = req.body;
-    const { id: receiverId } = req.params;
+
     const senderId = req.user._id;
+    const receiverId = req.params.id;
 
     if (!text && !image && !audio) {
-      return res
-        .status(400)
-        .json({ message: "Text, image or audio is required." });
+      return res.status(400).json({
+        message: "Text, image or audio is required.",
+      });
     }
 
-    if (senderId.equals(receiverId)) {
-      return res
-        .status(400)
-        .json({ message: "Cannot send messages to yourself." });
+    if (senderId.toString() === receiverId.toString()) {
+      return res.status(400).json({
+        message: "Cannot send messages to yourself.",
+      });
     }
 
-    const receiverExists = await User.exists({ _id: receiverId });
+    const receiver = await User.findById(receiverId);
 
-    if (!receiverExists) {
-      return res.status(404).json({ message: "Receiver not found." });
+    if (!receiver) {
+      return res.status(404).json({
+        message: "Receiver not found.",
+      });
     }
 
     let imageUrl = "";
     let audioUrl = "";
 
-    // Upload Image
+    // ======================
+    // IMAGE
+    // ======================
+
     if (image) {
       const uploadedImage = await cloudinary.uploader.upload(image, {
         folder: "chat-images",
@@ -127,7 +133,10 @@ export const sendMessage = async (req, res) => {
       imageUrl = uploadedImage.secure_url;
     }
 
-    // Upload Audio
+    // ======================
+    // AUDIO
+    // ======================
+
     if (audio) {
       const uploadedAudio = await cloudinary.uploader.upload(audio, {
         resource_type: "video",
@@ -137,7 +146,11 @@ export const sendMessage = async (req, res) => {
       audioUrl = uploadedAudio.secure_url;
     }
 
-    const newMessage = new Message({
+    // ======================
+    // SAVE MESSAGE
+    // ======================
+
+    const newMessage = await Message.create({
       senderId,
       receiverId,
       text,
@@ -145,37 +158,41 @@ export const sendMessage = async (req, res) => {
       audio: audioUrl,
     });
 
-    await newMessage.save();
+    // populate sender/receiver
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate("senderId", "-password")
+      .populate("receiverId", "-password");
 
-    // ===========================
-    // SOCKET FIX (REAL-TIME)
-    // ===========================
+    // ======================
+    // SOCKET
+    // ======================
 
     const receiverSocketId = getReceiverSocketId(receiverId);
     const senderSocketId = getReceiverSocketId(senderId.toString());
 
-    console.log("Sender:", senderId.toString());
-    console.log("Receiver:", receiverId);
-    console.log("Receiver Socket:", receiverSocketId);
-    console.log("Sender Socket:", senderSocketId);
-
-    // send to receiver
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+      io.to(receiverSocketId).emit(
+        "newMessage",
+        populatedMessage
+      );
     }
 
-    // send to sender (IMPORTANT FIX)
     if (senderSocketId) {
-      io.to(senderSocketId).emit("newMessage", newMessage);
+      io.to(senderSocketId).emit(
+        "newMessage",
+        populatedMessage
+      );
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(populatedMessage);
   } catch (error) {
-    console.log("Error in sendMessage:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.log("Send Message Error:", error);
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
-
 /* ===========================
    CHAT PARTNERS
 =========================== */
