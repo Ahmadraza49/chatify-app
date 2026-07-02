@@ -117,15 +117,14 @@ subscribeToMessages: () => {
     return;
   }
 
-  // Purana listener remove
   socket.off("newMessage");
 
   socket.on("newMessage", (newMessage) => {
     console.log("📩 NEW SOCKET MESSAGE:", newMessage);
 
-    const { selectedUser } = get();
+    const currentSelectedUser = get().selectedUser;
 
-    if (!selectedUser) {
+    if (!currentSelectedUser) {
       console.log("❌ No selected user");
       return;
     }
@@ -142,28 +141,28 @@ subscribeToMessages: () => {
 
     console.log("Sender:", senderId);
     console.log("Receiver:", receiverId);
-    console.log("Current Chat:", selectedUser._id);
+    console.log("Current Chat:", currentSelectedUser._id);
 
-    // Sirf current open chat ke messages
+    // Sirf current open chat
     if (
-      senderId.toString() !== selectedUser._id.toString() &&
-      receiverId.toString() !== selectedUser._id.toString()
+      senderId.toString() !== currentSelectedUser._id.toString() &&
+      receiverId.toString() !== currentSelectedUser._id.toString()
     ) {
-      console.log("⏭ Ignored (different chat)");
+      console.log("⏭ Different chat");
       return;
     }
 
     set((state) => {
-      const exists = state.messages.some(
-        (m) => m._id.toString() === newMessage._id.toString()
+      const exists = state.messages.find(
+        (m) => String(m._id) === String(newMessage._id)
       );
 
       if (exists) {
-        console.log("⚠ Duplicate message");
+        console.log("⚠ Duplicate");
         return state;
       }
 
-      console.log("✅ Message Added");
+      console.log("✅ Adding Message:", newMessage);
 
       return {
         messages: [...state.messages, newMessage],
