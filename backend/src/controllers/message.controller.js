@@ -79,7 +79,10 @@ export const getMessagesByUserId = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    })
+      .populate("senderId", "-password")
+      .populate("receiverId", "-password")
+      .sort({ createdAt: 1 });
 
     res.status(200).json(messages);
   } catch (error) {
@@ -135,7 +138,10 @@ export const sendMessage = async (req, res) => {
     const populatedMessage = await Message.findById(message._id)
       .populate("senderId", "-password")
       .populate("receiverId", "-password");
-
+        console.log(
+  "📩 SOCKET MESSAGE:",
+  JSON.stringify(populatedMessage, null, 2)
+);
     const receiverSocketId = getReceiverSocketId(receiverId.toString());
     const senderSocketId = getReceiverSocketId(senderId.toString());
 
