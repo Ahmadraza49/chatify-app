@@ -100,30 +100,12 @@ export const sendMessage = async (req, res) => {
 
     if (!text && !image && !audio) {
       return res.status(400).json({
-        message: "Text, image or audio is required.",
-      });
-    }
-
-    if (senderId.toString() === receiverId.toString()) {
-      return res.status(400).json({
-        message: "Cannot send messages to yourself.",
-      });
-    }
-
-    const receiver = await User.findById(receiverId);
-
-    if (!receiver) {
-      return res.status(404).json({
-        message: "Receiver not found.",
+        message: "Text, image or audio is required",
       });
     }
 
     let imageUrl = "";
     let audioUrl = "";
-
-    // ======================
-    // IMAGE
-    // ======================
 
     if (image) {
       const uploadedImage = await cloudinary.uploader.upload(image, {
@@ -132,10 +114,6 @@ export const sendMessage = async (req, res) => {
 
       imageUrl = uploadedImage.secure_url;
     }
-
-    // ======================
-    // AUDIO
-    // ======================
 
     if (audio) {
       const uploadedAudio = await cloudinary.uploader.upload(audio, {
@@ -146,11 +124,7 @@ export const sendMessage = async (req, res) => {
       audioUrl = uploadedAudio.secure_url;
     }
 
-    // ======================
-    // SAVE MESSAGE
-    // ======================
-
-    const newMessage = await Message.create({
+    const message = await Message.create({
       senderId,
       receiverId,
       text,
@@ -158,37 +132,26 @@ export const sendMessage = async (req, res) => {
       audio: audioUrl,
     });
 
-    // populate sender/receiver
-    const populatedMessage = await Message.findById(newMessage._id)
+    const populatedMessage = await Message.findById(message._id)
       .populate("senderId", "-password")
       .populate("receiverId", "-password");
 
-    // ======================
-    // SOCKET
-    // ======================
-
-    const receiverSocketId = getReceiverSocketId(receiverId);
+    const receiverSocketId = getReceiverSocketId(receiverId.toString());
     const senderSocketId = getReceiverSocketId(senderId.toString());
 
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit(
-        "newMessage",
-        populatedMessage
-      );
+      io.to(receiverSocketId).emit("newMessage", populatedMessage);
     }
 
     if (senderSocketId) {
-      io.to(senderSocketId).emit(
-        "newMessage",
-        populatedMessage
-      );
+      io.to(senderSocketId).emit("newMessage", populatedMessage);
     }
 
-    res.status(201).json(populatedMessage);
-  } catch (error) {
-    console.log("Send Message Error:", error);
+    return res.status(201).json(populatedMessage);
+  } catch (err) {
+    console.log(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
     });
   }
