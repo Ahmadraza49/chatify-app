@@ -38,82 +38,109 @@ export const useAuthStore = create((set, get) => ({
   // ======================
   // SIGNUP
   // ======================
-  signup: async (data) => {
-    set({ isSigningUp: true });
-    try {
-      const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
-      toast.success("Account created successfully!");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Signup failed");
-    } finally {
-      set({ isSigningUp: false });
-    }
-  },
+ signup: async (data) => {
+  set({ isSigningUp: true });
+
+  try {
+    const res = await axiosInstance.post("/auth/signup", data);
+
+    set({ authUser: res.data });
+
+    // ✅ socket connect
+    get().connectSocket();
+
+    toast.success("Account created successfully!");
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Signup failed");
+  } finally {
+    set({ isSigningUp: false });
+  }
+},
 
   // ======================
   // LOGIN
   // ======================
-  login: async (data) => {
-    set({ isLoggingIn: true });
-    try {
-      const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
-      toast.success("Logged in successfully");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
-    } finally {
-      set({ isLoggingIn: false });
-    }
-  },
+ login: async (data) => {
+  set({ isLoggingIn: true });
+
+  try {
+    const res = await axiosInstance.post("/auth/login", data);
+
+    set({ authUser: res.data });
+
+    // ✅ socket connect
+    get().connectSocket();
+
+    toast.success("Logged in successfully");
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Login failed");
+  } finally {
+    set({ isLoggingIn: false });
+  }
+},
 
   // ======================
   // LOGOUT
   // ======================
-  logout: async () => {
-    try {
-      await axiosInstance.post("/auth/logout");
+logout: async () => {
+  try {
+    await axiosInstance.post("/auth/logout");
 
-      const socket = get().socket;
-      if (socket) socket.disconnect();
+    const socket = get().socket;
 
-      set({ authUser: null, socket: null });
-      toast.success("Logged out successfully");
-    } catch (error) {
-      toast.error("Logout error");
+    if (socket) {
+      socket.disconnect();
     }
-  },
+
+    set({
+      authUser: null,
+      socket: null,
+      onlineUsers: [],
+    });
+
+    toast.success("Logged out successfully");
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || "Logout failed"
+    );
+  }
+},
 
   // ======================
   // SOCKET CONNECT (FIXED)
   // ======================
-  connectSocket: () => {
-    const { authUser, socket } = get();
+connectSocket: () => {
+  const { authUser, socket } = get();
 
-    if (!authUser || socket?.connected) return;
+  if (!authUser) return;
 
-    const newSocket = io(BASE_URL, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-      autoConnect: false,
+  if (socket?.connected) return;
+
+  const newSocket = io(BASE_URL, {
+    withCredentials: true,
+    transports: ["websocket"],
+  });
+
+  newSocket.on("connect", () => {
+    console.log("🟢 Socket Connected:", newSocket.id);
+  });
+
+  newSocket.on("disconnect", () => {
+    console.log("🔴 Socket Disconnected");
+  });
+
+  newSocket.on("getOnlineUsers", (users) => {
+    console.log("Online Users:", users);
+
+    set({
+      onlineUsers: users,
     });
+  });
 
-    newSocket.connect();
-
-    newSocket.on("connect", () => {
-      console.log("🟢 SOCKET CONNECTED:", newSocket.id);
-    });
-
-    newSocket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
-    });
-
-    newSocket.on("disconnect", () => {
-      console.log("🔴 SOCKET DISCONNECTED");
-    });
-
-    set({ socket: newSocket });
-  },
+  set({
+    socket: newSocket,
+  });
+},
 
   // ======================
   // SOCKET DISCONNECT
